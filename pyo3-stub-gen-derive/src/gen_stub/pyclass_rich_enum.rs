@@ -1,8 +1,8 @@
-use proc_macro2::{TokenStream as TokenStream2};
+use super::{extract_documents, parse_pyo3_attrs, util::quote_option, Attr, StubType};
+use crate::gen_stub::variant::VariantInfo;
+use proc_macro2::TokenStream as TokenStream2;
 use quote::{quote, ToTokens, TokenStreamExt};
 use syn::{parse_quote, Error, ItemEnum, Result, Type};
-use crate::gen_stub::variant::VariantInfo;
-use super::{extract_documents, parse_pyo3_attrs, util::quote_option, Attr, StubType};
 
 pub struct PyRichEnumInfo {
     pyclass_name: String,
@@ -36,7 +36,6 @@ impl TryFrom<ItemEnum> for PyRichEnumInfo {
             variants,
             attrs,
             ident,
-
             ..
         } = item;
 
@@ -55,12 +54,16 @@ impl TryFrom<ItemEnum> for PyRichEnumInfo {
             }
         }
 
-        let enum_type = parse_quote!(#ident);
+        let enum_type: Type = parse_quote!(#ident);
         let pyclass_name = pyclass_name.unwrap_or_else(|| ident.clone().to_string());
 
         let mut items = Vec::new();
         for variant in variants {
-            items.push(VariantInfo::from_variant(variant, &renaming_rule)?)
+            items.push(VariantInfo::from_variant(
+                enum_type.clone(),
+                variant,
+                &renaming_rule,
+            )?)
         }
 
         Ok(Self {
@@ -126,6 +129,7 @@ mod test {
             enum_id: std::any::TypeId::of::<PyPlaceholder>,
             variants: &[
                 ::pyo3_stub_gen::type_info::VariantInfo {
+                    bases: &[<PyPlaceholder as ::pyo3_stub_gen::PyStubType>::type_output],
                     pyclass_name: "Name",
                     fields: &[
                         ::pyo3_stub_gen::type_info::MemberInfo {
@@ -138,6 +142,7 @@ mod test {
                     doc: "",
                 },
                 ::pyo3_stub_gen::type_info::VariantInfo {
+                    bases: &[<PyPlaceholder as ::pyo3_stub_gen::PyStubType>::type_output],
                     pyclass_name: "twonum",
                     fields: &[
                         ::pyo3_stub_gen::type_info::MemberInfo {
@@ -155,6 +160,7 @@ mod test {
                     doc: "",
                 },
                 ::pyo3_stub_gen::type_info::VariantInfo {
+                    bases: &[<PyPlaceholder as ::pyo3_stub_gen::PyStubType>::type_output],
                     pyclass_name: "ndim",
                     fields: &[
                         ::pyo3_stub_gen::type_info::MemberInfo {
@@ -167,6 +173,7 @@ mod test {
                     doc: "",
                 },
                 ::pyo3_stub_gen::type_info::VariantInfo {
+                    bases: &[<PyPlaceholder as ::pyo3_stub_gen::PyStubType>::type_output],
                     pyclass_name: "description",
                     fields: &[],
                     module: None,

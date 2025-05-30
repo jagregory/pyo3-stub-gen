@@ -1,22 +1,26 @@
-use proc_macro2::{Ident, TokenStream as TokenStream2};
-use quote::{quote, ToTokens, TokenStreamExt};
-use syn::{Fields, Result, Variant};
-use syn::spanned::Spanned;
 use crate::gen_stub::attr::{extract_documents, parse_pyo3_attrs, Attr};
 use crate::gen_stub::member::MemberInfo;
 use crate::gen_stub::renaming::RenamingRule;
 use crate::gen_stub::util::quote_option;
+use proc_macro2::{Ident, TokenStream as TokenStream2};
+use quote::{quote, ToTokens, TokenStreamExt};
+use syn::spanned::Spanned;
+use syn::{Fields, Result, Type, Variant};
 
 pub struct VariantInfo {
     pyclass_name: String,
     module: Option<String>,
     fields: Vec<MemberInfo>,
     doc: String,
+    bases: Vec<Type>,
 }
 
-
 impl VariantInfo {
-    pub fn from_variant(variant: Variant, renaming_rule: &Option<RenamingRule>) -> Result<Self> {
+    pub fn from_variant(
+        base: Type,
+        variant: Variant,
+        renaming_rule: &Option<RenamingRule>,
+    ) -> Result<Self> {
         let Variant {
             ident,
             fields,
@@ -44,12 +48,12 @@ impl VariantInfo {
         let mut members = Vec::new();
 
         match fields {
-            Fields::Unit => {},
+            Fields::Unit => {}
             Fields::Named(fields) => {
                 for field in fields.named {
                     members.push(MemberInfo::try_from(field)?)
                 }
-            },
+            }
             Fields::Unnamed(fields) => {
                 for (i, field) in fields.unnamed.iter().enumerate() {
                     let mut named_field = field.clone();
@@ -59,14 +63,13 @@ impl VariantInfo {
             }
         }
 
-
         let doc = extract_documents(&attrs).join("\n");
         Ok(Self {
+            bases: vec![base.clone()],
             pyclass_name,
             fields: members,
             module,
             doc,
-
         })
     }
 }
@@ -74,6 +77,7 @@ impl VariantInfo {
 impl ToTokens for VariantInfo {
     fn to_tokens(&self, tokens: &mut TokenStream2) {
         let Self {
+            bases,
             pyclass_name,
             fields,
             doc,
@@ -82,6 +86,7 @@ impl ToTokens for VariantInfo {
         let module = quote_option(module);
         tokens.append_all(quote! {
             ::pyo3_stub_gen::type_info::VariantInfo {
+                bases: &[ #( <#bases as ::pyo3_stub_gen::PyStubType>::type_output ),* ],
                 pyclass_name: #pyclass_name,
                 fields: &[ #( #fields),* ],
                 module: #module,

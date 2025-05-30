@@ -9,7 +9,7 @@ pub struct ClassDef {
     pub members: Vec<MemberDef>,
     pub methods: Vec<MethodDef>,
     pub bases: Vec<TypeInfo>,
-    pub classes: Vec<ClassDef>
+    pub classes: Vec<ClassDef>,
 }
 
 impl Import for ClassDef {
@@ -54,7 +54,7 @@ impl From<&VariantInfo> for ClassDef {
             members: info.fields.iter().map(MemberDef::from).collect(),
             methods: Vec::new(),
             classes: Vec::new(),
-            bases: Vec::new(),
+            bases: info.bases.iter().map(|f| f()).collect(),
         }
     }
 }

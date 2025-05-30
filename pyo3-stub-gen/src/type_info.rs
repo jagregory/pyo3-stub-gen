@@ -128,6 +128,7 @@ inventory::collect!(PyClassInfo);
 /// Info of a `#[pyclass]` with a single variant of a rich (structured) Rust enum
 #[derive(Debug)]
 pub struct VariantInfo {
+    pub bases: &'static [fn() -> TypeInfo],
     pub pyclass_name: &'static str,
     pub module: Option<&'static str>,
     pub doc: &'static str,
